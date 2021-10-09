@@ -193,16 +193,75 @@ ggplot()+
   geom_sf(data=Peru_raster_prov)+
   geom_sf(data=DF, aes(color=Punto))
 
+## eligiendo solo algunas provincias de Peru
 
+Norte_oriente<- Peru_raster_prov %>% 
+  dplyr::filter(NAME_1 %in% c("Amazonas", "Lambayeque", "Cajamarca"))
+
+ggplot()+
+  geom_sf(data = Norte_oriente, aes(fill=NAME_2))+
+  scale_fill_viridis_d()
 
 
 #### Raster #### 
 
-Prec <- getData(name = "worldclim", var= "prec", res=10)
+Prec <- getData(name = "worldclim", res=10,  var= "prec")
+
+Prec
 
 plot(Prec)
 
+# cambiando el fondo de la vista
 
-#### Proyecciones ####
+plot(Prec, colNA="black")
+
+# subseteo de stacks 
+
+Invierno_sur <- Prec[[c(6,7,8)]]
+
+plot(Invierno_sur)
+
+plot(Invierno_sur, colNA="black")
+
+#### Operaciones simples con Raster ####
+
+# sumaremos las precipitaciones de los meses de invierno en el hemisferio sur
+
+Inv_sur_total <- Prec[[6]]+ Prec[[7]]+ Prec[[8]]
+
+plot(Inv_sur_total, colNA="black")
+
+# se puede hacer un resumen de la prec anual al sumar todos los meses 
+
+PP_total <- sum(Prec)
+
+plot(PP_total, colNA="black")
+
+#### Cortar un raster (en base a otro mapa) ####
+
+
+Peru_prec<- PP_total %>% crop(Peru_raster)
+
+plot(Peru_prec)
+
+## para que se vea la forma de peru añadimos la funcion mask()
+# siempre hacer primero el crop (corte) y luego el mask (mascara)
+
+Peru_prec<- PP_total %>% crop(Peru_raster) %>% mask(Peru_raster)
+
+plot(Peru_prec, colNA="black")
+
+## Extraeremos la precipitacion anual en los puntos generados en el DF
+
+raster::extract(Peru_prec, DF)
+
+
+
+
+
+
+
+
+ #### Proyecciones ####
 
 proj4string()
