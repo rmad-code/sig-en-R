@@ -255,6 +255,107 @@ plot(Peru_prec, colNA="black")
 
 raster::extract(Peru_prec, DF)
 
+# si vemos la clase de objeto que es lo generado por el codigo anterior:
+
+raster::extract(Peru_prec, DF) %>% class()
+
+# al ser numerico, lo podemos añadir al DF
+
+DF$Prec<- raster::extract(Peru_prec, DF)
+
+# Extraigamos la precipitacion anual para los puntos de DF
+
+Prec_anual_ptos<- raster::extract(Prec, DF)
+
+Prec_anual_ptos
+
+# como vemos el codigo genera una matrix con la prec en cada mes para cada punto de DF
+
+## luego, lo transformamos en data.frame
+
+Prec_anual_ptos %>% as.data.frame()
+
+### unimos lo anterior a DF
+
+Prec_anual_ptos %>% as.data.frame() %>% bind_cols(DF)
+
+DF_1<- Prec_anual_ptos %>% as.data.frame() %>% bind_cols(DF)
+
+
+# se puede apreciar en la comprobacion que existe una pequeña diferencia en las 
+# precipitaciones entre la anual y la suma de las mensuales
+sum(DF_1[1, c(1:12)])
+
+sum(DF_1[2, c(1:12)])
+
+#### Exportar y leer un raster ####
+# se le da la extension "grd" por ser la mas nativa, overwrite es por si se 
+# desea sobreescribir
+
+writeRaster(Peru_prec, "Peru_prec.grd", overwrite=T)
+
+# leer el raster
+
+Peru_prec_2 <- raster("Peru_prec.grd")
+
+# comprondo el archivo 
+
+plot(Peru_prec_2)
+
+# en el caso de que se tratara de varias capas como en un geostick
+# lo unico que se hace para leer el archivo es cambiar el raster por stack
+
+#### Proyecciones ####
+# la funcion proj4string() permite determinar la proyeccion o sistema 
+# de coordenadas de referencia de un archivo
+
+proj4string(Peru_prec_2)
+
+### no se puede evaluar cierta caracteristica si se tiene pixeles de areas
+# diferentes
+
+# revisar Projection wizard: permite elegir un lugar del mundo y cambiar 
+# su proyeccion y elegir el tipo de proyeccion
+
+
+## supongamos que cambiaremos las propiedades de proyeccion a equal area
+
+
+# hacemos una reproyeccion
+
+Peru_prec_Equal <- projectRaster(Peru_prec, crs = "+proj=tcea +lon_0=-75.9375 +datum=WGS84 +units=m +no_defs")
+
+plot(Peru_prec_Equal, colNA="black")
+
+# observemos la diferencia en los graficos
+
+plot(Peru_prec, colNA="black")
+
+plot(Peru_prec_Equal, colNA="black")
+
+#### Graficar raster y shapefiles juntos ####
+
+Peru_prec_DF <- Peru_prec_2 %>% as("SpatialPixelsDataFrame") %>% 
+  as.data.frame()
+
+# revisando el objeto creado
+
+head(Peru_prec_DF) # devuelve al prec, lon y lat
+
+# cambiamos la variable layer a precipitacion (prec)
+
+Peru_prec_DF <- Peru_prec_2 %>% as("SpatialPixelsDataFrame") %>% 
+  as.data.frame() %>% rename(prec=layer)
+
+head(Peru_prec_DF)
+
+# graficando con ggplot
+
+ggplot()+
+  geom_tile(data = Peru_prec_DF, aes(x=x, y=y, fill= prec))+
+  geom_sf(data = Peru_raster_prov, alpha=0)+
+  scale_fill_viridis_c()+
+  xlab("")+ ylab("")+ theme_bw()
 
 
 
@@ -262,6 +363,7 @@ raster::extract(Peru_prec, DF)
 
 
 
- #### Proyecciones ####
 
-proj4string()
+
+
+
